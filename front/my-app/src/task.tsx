@@ -3,7 +3,7 @@ import axios from 'axios';
 
 type Transactions = {
 	id: number | null;
-	dateTime: number;
+	dateTime: string;
 	author: string;
 	sum: number;
 	category: string;
@@ -17,7 +17,7 @@ const TransactionTracker: React.FC = () => {
 	const [category, setCategory] = useState<string>('');
 	const [comment, setComment] = useState<string>('');
 
-	const [transaction, setTransaction] = useState<Transactions[]>([]);
+	const [transactions, setTransaction] = useState<Transactions[]>([]);
 
 	const categories = ['Развлечение', 'Машина', 'Дом', 'Другое'];
 
@@ -29,7 +29,7 @@ const TransactionTracker: React.FC = () => {
 
 		const newTransaction: Transactions = {
 			id: null,
-			dateTime: Date.now(),
+			dateTime: new Date(dateTime).toISOString(),
 			author,
 			sum,
 			category,
@@ -38,12 +38,12 @@ const TransactionTracker: React.FC = () => {
 
 		try {
 			const response = await axios.post(
-				'http://localhost:3000/transactions',
+				'http://localhost:5000/transactions',
 				newTransaction
 			);
 			console.log('Транзакция успешно создана:', response.data);
 
-			setTransaction([...transaction, response.data.jane]);
+			setTransaction([...transactions, response.data.transaction]);
 			setAuthor('');
 			setSum(0);
 			setCategory('');
@@ -56,9 +56,8 @@ const TransactionTracker: React.FC = () => {
 	// получаем данные и обнавляем список
 	async function getTransactions() {
 		try {
-			const response = await axios.get('http://localhost:3000/transactions');
-			const result = response.data.items;
-			console.log(result);
+			const response = await axios.get('http://localhost:5000/transactions');
+			const result = response.data.transactions;
 			setTransaction(result);
 		} catch (error) {
 			console.error(error);
@@ -68,15 +67,16 @@ const TransactionTracker: React.FC = () => {
 		getTransactions();
 	}, []);
 
+	// Удаляем транзакцию
 	const handleDeleteExpense = async (id: number) => {
 		try {
 			const response = await axios.delete(
-				`http://localhost:3000/transactions/${id}`
+				`http://localhost:5000/transactions/${id}`
 			);
 
 			if (response.status === 200) {
 				setTransaction(
-					transaction.filter(transaction => transaction.id !== id)
+					transactions.filter(transaction => transaction.id !== id)
 				);
 				console.log('Транзакция успешно удалена');
 			} else {
@@ -164,11 +164,11 @@ const TransactionTracker: React.FC = () => {
 
 			<div>
 				<h2 className='text-xl font-bold mb-4'>Список расходов</h2>
-				{transaction.length === 0 ? (
+				{transactions?.length === 0 ? (
 					<p className='text-gray-500'>Расходов пока нет.</p>
 				) : (
 					<ul>
-						{transaction.map(transaction => (
+						{transactions?.map(transaction => (
 							<li
 								key={transaction.id}
 								className='flex justify-between items-center p-2 border-b'
@@ -180,7 +180,9 @@ const TransactionTracker: React.FC = () => {
 
 								{transaction.id !== null ? (
 									<button
-										onClick={() => handleDeleteExpense(transaction.id)}
+										onClick={() =>
+											handleDeleteExpense(transaction.id as number)
+										}
 										className='text-red-500 hover:text-red-700'
 									>
 										Удалить
